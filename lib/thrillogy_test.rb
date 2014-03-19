@@ -1,4 +1,4 @@
-require 'thrillogy'
+require_relative 'thrillogy'
 
 class QueenElizabeth
   @@annoyances = []
@@ -100,7 +100,7 @@ class WarningLogger
   end
 end
 
-class InviteAudience < Thrillogy::Hooks
+class InviteAudience < Thrillogy::Callbacks
   def around
     Audience.gasp
     run

@@ -1,5 +1,5 @@
 module Thrillogy
-  class Hooks
+  class Callbacks
     @@warning_logger = nil
     
     attr_accessor :call
@@ -20,13 +20,17 @@ module Thrillogy
     end
     
     public
-    def self.on(_class, *methods)
-      Installer.new(_class, self).install(*methods)
+    def self.install(*classes_and_methods, &block)
+      classes, methods = classes_and_methods.partition { |x| x.is_a? Class }
+      callback_definition = block_given? ? block : self
+      classes.each do |_class|
+        Installer.new(_class, callback_definition).install(*methods)
+      end
     end
     
     class << self
-      [:to, :for, :from, :at, :when].each do |_alias|
-        alias_method _alias, :on
+      [:on, :to, :for, :from, :at, :when].each do |_alias|
+        alias_method _alias, :install
       end
     end
     
@@ -62,8 +66,11 @@ module Thrillogy
     def install(*methods_and_options)
       methods, options = separate(methods_and_options)
       methods.each do |method_name|
-        _target = target # get attrs into local vars so it will be enclosed by
-        _source = source # the block passed to define_method
+        # get attrs into local vars so they will be enclosed by the block passed
+        # to define_method
+        _target = target 
+        _source = source
+        _source = Class.new(Callbacks, &_source) if _source.is_a? Proc
         
         aliased = uniquely_rename(method_name)
         target.send :alias_method, aliased, method_name
